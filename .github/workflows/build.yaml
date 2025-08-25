@@ -1,0 +1,37 @@
+name: build lambda layer
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+      id-token: write
+      contents: read
+env:
+    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout 
+        uses: actions/checkout@v4
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/CreateLambdaLayer
+          aws-region: eu-north-1
+      - name: set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+      - name: install requirements
+        run: |
+          python -m pip install -r", "requirements.txt --upgrade
+          zip -r layer.zip ./ > /dev/null
+      - name: publish lambda
+        run: |
+          aws lambda publish-layer-version --layer-name my-layer --zip-file fileb://layer.zip --compatible-runtimes python3.12
